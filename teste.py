@@ -1,9 +1,14 @@
-from models.equipamentos import Equipamento
+from datetime import date
+from models.emprestimos import Emprestimo
 
-projetor = Equipamento("projer001", "Projetor", "Projetor de marca tal", "disponive")
-microfone = Equipamento("mic001", "Microfone Wireless", "Microfone de marca tal", "disponivel")
+data_retirada = date(2026, 11, 5)
+data_devolucao = date(2026, 11, 10)
 
-print(projetor.codigo, projetor.nome, projetor.descricao, projetor.estado)
-projetor.alterar_estado("emprestado")
-print(projetor.esta_disponivel())
-print(microfone.esta_disponivel())
+emprestimo = Emprestimo(
+    "projer001",
+    "user001",
+    data_retirada,
+    data_devolucao
+)
+
+print(emprestimo.esta_em_atraso())
