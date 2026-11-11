@@ -78,3 +78,6 @@ def menu_cadastros():
             case _:
                 print("Opção inválida! Tente Novamente")
     return
+
+def registrar_emprestimo():
+    return
