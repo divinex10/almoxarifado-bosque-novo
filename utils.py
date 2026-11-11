@@ -21,6 +21,7 @@ def menu_principal():
 
         match escolha:
             case 0:
+                print("Programa finalizado!")
                 break
 
             case 1:
@@ -49,5 +50,31 @@ def menu_principal():
     return
 
 def menu_cadastros():
-    #FUNÇÃO DO MENU DE CADASTROS (NÃO IMPLEMENTADO AINDA)
+#FUNÇÃO DO MENU DE CADASTROS(OPÇÃO 5) COM LOOP E SWITCH CASE
+    while True: 
+        print("""
+    ==========CADASTROS=========
+
+    [1] Cadastrar equipamento
+    [2] Listar equipamentos
+    [3] Cadastrar usuário
+    [0] Voltar ao menu principal
+    """)
+        escolha = int(input("Escolha uma opção: "))
+
+        match escolha:
+            case 0:
+                return
+
+            case 1:
+                break
+
+            case 2:
+                break
+
+            case 3:
+                break
+
+            case _:
+                print("Opção inválida! Tente Novamente")
     return
