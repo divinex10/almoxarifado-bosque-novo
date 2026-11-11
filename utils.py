@@ -34,6 +34,7 @@ def menu_principal():
                 break
 
             case 4:
+                submenu_reservas()
                 break
 
             case 5:
@@ -81,3 +82,16 @@ def menu_cadastros():
 
 def registrar_emprestimo():
     return
+
+def submenu_reservas():
+    reservas = int(input( "Para checar os itens reservados, digite 1:"))
+    match reservas:
+        case 1: 
+            print ( f"Os itens reservados são: {reservados} " )
+        case _:
+            print ( " Opção inválida! Tente novamente")
+	
+		
+					
+
+
