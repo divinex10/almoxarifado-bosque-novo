@@ -1,4 +1,5 @@
 from datetime import date
+
 from models.emprestimos import Emprestimo
 
 data_retirada = date(2026, 11, 5)
@@ -11,4 +12,3 @@ emprestimo = Emprestimo(
     data_devolucao
 )
 
-print(emprestimo.esta_em_atraso())

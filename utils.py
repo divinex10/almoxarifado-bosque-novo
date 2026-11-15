@@ -90,8 +90,3 @@ def submenu_reservas():
             print ( f"Os itens reservados são: {reservados} " )
         case _:
             print ( " Opção inválida! Tente novamente")
-	
-		
-					
-
-
