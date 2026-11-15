@@ -53,3 +53,19 @@ class RepositorioJSON:
             "estado":estado
         }
 
+    def dict_para_equipamento(self, dicionario):
+        return Equipamento(dicionario["codigo"], dicionario["nome"], dicionario["descricao"], dicionario["estado"])
+
+    def usuario_para_dict(self, objeto):
+        codigo = objeto.codigo
+        nome = objeto.nome
+        contato = objeto.contato
+
+        return {
+            "codigo":codigo,
+            "nome": nome,
+            "contato":contato
+        }
+
+    def dict_para_usuario(self, dicionario):
+        return Usuario(dicionario["codigo"], dicionario["nome"], dicionario["contato"])
