@@ -69,3 +69,90 @@ class RepositorioJSON:
 
     def dict_para_usuario(self, dicionario):
         return Usuario(dicionario["codigo"], dicionario["nome"], dicionario["contato"])
+
+    def avaria_para_dict(self, objeto):
+        codigo = objeto.codigo
+        codigo_equipamento = objeto.codigo_equipamento
+        codigo_emprestimo = objeto.codigo_emprestimo
+        descricao = objeto.descricao
+        data_registro = objeto.data_registro
+        resolvida = objeto.resolvida
+        data_resolucao = objeto.data_resolucao
+
+        return {
+            "codigo":codigo,
+            "codigo_equipamento":codigo_equipamento,
+            "codigo_emprestimo": codigo_emprestimo,
+            "descricao":descricao,
+            "data_registro":data_registro,
+            "resolvida":resolvida,
+            "data_resolucao":data_resolucao
+        }
+
+    def dict_para_avaria(self, dicionario):
+        return Avaria(
+            dicionario["codigo"],
+            dicionario["codigo_equipamento"],
+            dicionario["codigo_emprestimo"],
+            dicionario["descricao"],
+            dicionario["data_registro"],
+            dicionario["resolvida"],
+            dicionario["data_resolucao"]
+        )
+
+    def emprestimo_para_dict(self, objeto):
+        codigo_equipamento = objeto.codigo_equipamento
+        codigo_usuario = objeto.codigo_usuario
+        data_retirada = objeto.data_retirada
+        data_devolucao = objeto.data_devolucao
+        finalizado = objeto.finalizado
+        data_retorno = objeto.data_retorno
+
+        return {
+            "codigo_equipamento":codigo_equipamento,
+            "codigo_usuario":codigo_usuario,
+            "data_retirada":data_retirada,
+            "data_devolucao":data_devolucao,
+            "finalizado":finalizado,
+            "data_retorno":data_retorno
+        }
+
+    def dict_para_emprestimo(self, dicionario):
+        return Emprestimo(
+            dicionario["codigo_equipamento"],
+            dicionario["codigo_usuario"],
+            dicionario["data_retirada"],
+            dicionario["data_devolucao"],
+            dicionario["finalizado"],
+            dicionario["data_retorno"]
+        )
+
+    def reserva_para_dict(self, objeto):
+        codigo = objeto.codigo
+        codigo_equipamento = objeto.codigo_equipamento
+        codigo_usuario = objeto.codigo_usuario
+        data_inicio = objeto.data_inicio
+        data_fim = objeto.data_fim
+        cancelada = objeto.cancelada
+        atendida = objeto.atendida
+
+        return {
+            "codigo":codigo,
+            "codigo_equipamento":codigo_equipamento,
+            "codigo_usuario":codigo_usuario,
+            "data_inicio":data_inicio,
+            "data_fim":data_fim,
+            "cancelada":cancelada,
+            "atendida":atendida
+        }
+
+    def dict_para_reserva(self, dicionario):
+        return Reserva(
+            dicionario["codigo"],
+            dicionario["codigo_equipamento"],
+            dicionario["codigo_usuario"],
+            dicionario["data_inicio"],
+            dicionario["data_fim"],
+            dicionario["cancelada"],
+            dicionario["atendida"]
+        )
