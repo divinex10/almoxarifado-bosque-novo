@@ -161,3 +161,13 @@ class RepositorioJSON:
             dicionario["cancelada"],
             dicionario["atendida"]
         )
+
+    def carregar_equipamentos(self):
+        equipamentos = []
+        dados = self.carregar("equipamentos.json")
+
+        for equipamento in dados:
+            objeto = self.dict_para_equipamento(equipamento)
+            equipamentos.append(objeto)
+            
+        return equipamentos
