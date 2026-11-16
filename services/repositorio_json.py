@@ -211,3 +211,33 @@ class RepositorioJSON:
             reservas.append(objeto)
 
         return reservas
+
+    def salvar_equipamentos(self, equipamentos):
+        dados = []
+        for equipamento in equipamentos:
+            dados.append(self.equipamento_para_dict(equipamento))
+        self.salvar("equipamentos.json", dados)
+
+    def salvar_usuarios(self, usuarios):
+        dados = []
+        for usuario in usuarios:
+            dados.append(self.usuario_para_dict(usuario))
+        self.salvar("usuarios.json", dados)
+
+    def salvar_avarias(self, avarias):
+        dados = []
+        for avaria in avarias:
+            dados.append(self.avaria_para_dict(avaria))
+        self.salvar("avarias.json", dados)
+
+    def salvar_emprestimos(self, emprestimos):
+        dados = []
+        for emprestimo in emprestimos:
+            dados.append(self.emprestimo_para_dict(emprestimo))
+        self.salvar("emprestimos.json", dados)
+
+    def salvar_reservas(self, reservas):
+        dados = []
+        for reserva in reservas:
+            dados.append(self.reserva_para_dict(reserva))
+        self.salvar("reservas.json", dados)
