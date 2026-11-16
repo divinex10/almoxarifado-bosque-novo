@@ -1,0 +1,10 @@
+[
+    {
+        "codigo_equipamento": "001",
+        "codigo_usuario": "usr001",
+        "data_retirada": "2026-11-16",
+        "data_devolucao": "2026-11-20",
+        "finalizado": false,
+        "data_retorno": null
+    }
+]

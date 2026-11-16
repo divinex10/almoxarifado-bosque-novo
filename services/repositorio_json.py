@@ -169,5 +169,45 @@ class RepositorioJSON:
         for equipamento in dados:
             objeto = self.dict_para_equipamento(equipamento)
             equipamentos.append(objeto)
-            
+
         return equipamentos
+
+    def carregar_usuarios(self):
+        usuarios = []
+        dados = self.carregar("usuarios.json")
+
+        for usuario in dados:
+            objeto = self.dict_para_usuario(usuario)
+            usuarios.append(objeto)
+
+        return usuarios
+
+    def carregar_avarias(self):
+        avarias = []
+        dados = self.carregar("avarias.json")
+
+        for avaria in dados:
+            objeto = self.dict_para_avaria(avaria)
+            avarias.append(objeto)
+
+        return avarias
+
+    def carregar_emprestimos(self):
+        emprestimos = []
+        dados = self.carregar("emprestimos.json")
+
+        for emprestimo in dados:
+            objeto = self.dict_para_emprestimo(emprestimo)
+            emprestimos.append(objeto)
+
+        return emprestimos
+
+    def carregar_reservas(self):
+        reservas = []
+        dados = self.carregar("reservas.json")
+
+        for reserva in dados:
+            objeto = self.dict_para_reserva(reserva)
+            reservas.append(objeto)
+
+        return reservas
