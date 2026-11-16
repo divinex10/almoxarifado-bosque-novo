@@ -75,9 +75,9 @@ class RepositorioJSON:
         codigo_equipamento = objeto.codigo_equipamento
         codigo_emprestimo = objeto.codigo_emprestimo
         descricao = objeto.descricao
-        data_registro = objeto.data_registro
+        data_registro = objeto.data_registro.isoformat()
         resolvida = objeto.resolvida
-        data_resolucao = objeto.data_resolucao
+        data_resolucao = objeto.data_resolucao.isoformat() if objeto.data_resolucao is not None else None
 
         return {
             "codigo":codigo,
@@ -95,18 +95,23 @@ class RepositorioJSON:
             dicionario["codigo_equipamento"],
             dicionario["codigo_emprestimo"],
             dicionario["descricao"],
-            dicionario["data_registro"],
+            date.fromisoformat(dicionario["data_registro"]),
             dicionario["resolvida"],
-            dicionario["data_resolucao"]
+            date.fromisoformat(dicionario["data_resolucao"]) if dicionario["data_resolucao"] is not None else None
         )
 
     def emprestimo_para_dict(self, objeto):
         codigo_equipamento = objeto.codigo_equipamento
         codigo_usuario = objeto.codigo_usuario
-        data_retirada = objeto.data_retirada
-        data_devolucao = objeto.data_devolucao
+        data_retirada = objeto.data_retirada.isoformat()
+        data_devolucao = objeto.data_devolucao.isoformat()
         finalizado = objeto.finalizado
-        data_retorno = objeto.data_retorno
+
+        if objeto.data_retorno is not None:
+            data_retorno = objeto.data_retorno.isoformat()
+
+        else:
+            data_retorno = None
 
         return {
             "codigo_equipamento":codigo_equipamento,
@@ -121,18 +126,18 @@ class RepositorioJSON:
         return Emprestimo(
             dicionario["codigo_equipamento"],
             dicionario["codigo_usuario"],
-            dicionario["data_retirada"],
-            dicionario["data_devolucao"],
+            date.fromisoformat(dicionario["data_retirada"]),
+            date.fromisoformat(dicionario["data_devolucao"]),
             dicionario["finalizado"],
-            dicionario["data_retorno"]
+            date.fromisoformat(dicionario["data_retorno"]) if dicionario["data_retorno"] is not None else None
         )
 
     def reserva_para_dict(self, objeto):
         codigo = objeto.codigo
         codigo_equipamento = objeto.codigo_equipamento
         codigo_usuario = objeto.codigo_usuario
-        data_inicio = objeto.data_inicio
-        data_fim = objeto.data_fim
+        data_inicio = objeto.data_inicio.isoformat()
+        data_fim = objeto.data_fim.isoformat()
         cancelada = objeto.cancelada
         atendida = objeto.atendida
 
@@ -151,8 +156,8 @@ class RepositorioJSON:
             dicionario["codigo"],
             dicionario["codigo_equipamento"],
             dicionario["codigo_usuario"],
-            dicionario["data_inicio"],
-            dicionario["data_fim"],
+            date.fromisoformat(dicionario["data_inicio"]),
+            date.fromisoformat(dicionario["data_fim"]),
             dicionario["cancelada"],
             dicionario["atendida"]
         )
