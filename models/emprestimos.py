@@ -1,7 +1,8 @@
 from datetime import date
 
 class Emprestimo:
-    def __init__(self, codigo_equipamento, codigo_usuario, data_retirada, data_devolucao, finalizado = False, data_retorno = None):
+    def __init__(self, codigo, codigo_equipamento, codigo_usuario, data_retirada, data_devolucao, finalizado = False, data_retorno = None):
+        self.codigo = codigo
         self.codigo_equipamento = codigo_equipamento
         self.codigo_usuario = codigo_usuario
         self.data_retirada = data_retirada
@@ -16,10 +17,8 @@ class Emprestimo:
         return data_atual > self.data_devolucao
 
     def esta_ativo(self):
-        if self.finalizado:
-            return False
-
-        return not self.esta_em_atraso()
+        return not self.finalizado 
+    
 
     def finalizar(self, data_retorno):
         self.finalizado = True
