@@ -1,5 +1,4 @@
 from datetime import date 
-from models.emprestimos import Emprestimo
 
 class SistemaAlmoxarifado:
     def __init__(self, repositorio):
@@ -55,9 +54,14 @@ class SistemaAlmoxarifado:
         if emprestimo.data_retirada != date.today() or emprestimo.data_retirada > emprestimo.data_devolucao:
             return False
 
+        for objeto in self.emprestimos:
+            if objeto.codigo == emprestimo.codigo:
+                return False
+
         for reserva in self.reservas:
             if reserva.codigo_equipamento == emprestimo.codigo_equipamento and reserva.esta_ativa() and emprestimo.data_retirada <= reserva.data_fim and reserva.data_inicio <= emprestimo.data_devolucao:
                 return False
+            
 
         self.emprestimos.append(emprestimo)
         equipamento.alterar_estado("emprestado")
@@ -76,7 +80,6 @@ class SistemaAlmoxarifado:
         for emprestimo in self.emprestimos:
             if emprestimo.codigo_equipamento == codigo_equipamento and not emprestimo.finalizado :
                 emprestimo.finalizar(data_retorno)
-                self.repositorio.salvar_emprestimos(self.emprestimos)
 
                 if avaria is not None:
                     self.avarias.append(avaria)
@@ -90,5 +93,40 @@ class SistemaAlmoxarifado:
 
                 return True
 
+        return False
+
+    def cadastrar_reserva(self, reserva):
+        equipamento = self.buscar_equipamento(reserva.codigo_equipamento)
+        usuario = self.buscar_usuario(reserva.codigo_usuario)
+
+        if reserva.data_inicio > reserva.data_fim and reserva.data_inicio < date.today():
+             return False
+
+        if equipamento is None or usuario is None:
             return False
-            
+
+        for objeto in self.reservas:
+            if objeto.codigo == reserva.codigo:
+                return False     
+
+            if objeto.codigo_equipamento == reserva.codigo_equipamento and objeto.esta_ativa():
+                if reserva.data_inicio <= objeto.data_fim and reserva.data_fim >= objeto.data_inicio:
+                    return False
+
+        if equipamento.estado != "danificado":
+            if equipamento.estado == "emprestado":
+                for emprestimo in self.emprestimos:
+                    if emprestimo.codigo_equipamento == reserva.codigo_equipamento and not emprestimo.finalizado:
+                        if emprestimo.esta_em_atraso():
+                            return False
+                        
+                        elif reserva.data_inicio <= emprestimo.data_devolucao and reserva.data_fim >= emprestimo.data_retirada:
+                            return False
+
+        else:
+            return False
+
+        self.reservas.append(reserva)
+        self.repositorio.salvar_reservas(self.reservas)
+        return True
+   
