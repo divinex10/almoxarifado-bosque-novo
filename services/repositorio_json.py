@@ -101,6 +101,7 @@ class RepositorioJSON:
         )
 
     def emprestimo_para_dict(self, objeto):
+        codigo = objeto.codigo
         codigo_equipamento = objeto.codigo_equipamento
         codigo_usuario = objeto.codigo_usuario
         data_retirada = objeto.data_retirada.isoformat()
@@ -114,6 +115,7 @@ class RepositorioJSON:
             data_retorno = None
 
         return {
+            "codigo":codigo,
             "codigo_equipamento":codigo_equipamento,
             "codigo_usuario":codigo_usuario,
             "data_retirada":data_retirada,
@@ -124,6 +126,7 @@ class RepositorioJSON:
 
     def dict_para_emprestimo(self, dicionario):
         return Emprestimo(
+            dicionario["codigo"],
             dicionario["codigo_equipamento"],
             dicionario["codigo_usuario"],
             date.fromisoformat(dicionario["data_retirada"]),
