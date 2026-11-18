@@ -9,6 +9,48 @@ class SistemaAlmoxarifado:
         self.reservas = self.repositorio.carregar_reservas()
         self.avarias = self.repositorio.carregar_avarias()
 
+    def listar_equipamentos(self):
+           return self.equipamentos
+
+    def listar_emprestimo_ativos(self):
+        emprestimos_ativos = []
+
+        for emprestimo in self.emprestimos:
+            if emprestimo.esta_ativo():
+                emprestimos_ativos.append(emprestimo)
+
+        return emprestimos_ativos
+
+    def listar_emprestimos_atrasados(self):
+        emprestimos_atrasados = []
+
+        for emprestimo in self.emprestimos:
+            if emprestimo.esta_em_atraso():
+                emprestimos_atrasados.append(emprestimo)
+
+            return emprestimos_atrasados
+
+    def listar_reservas_ativas(self):
+        reservas_ativas = []
+
+        for reserva in self.reservas:
+            if reserva.esta_ativa():
+                reservas_ativas.append(reserva)
+
+        return reservas_ativas
+
+
+    def listar_avarias_pendentes(self):
+        avarias_pendentes = []
+
+        for avaria in self.avarias:
+            if not avaria.esta_ativa():
+                avarias_pendentes.append(avaria)
+
+        return avarias_pendentes
+
+    
+
     def cadastrar_equipamento(self, equipamento):
         for objeto in self.equipamentos:
             if objeto.codigo == equipamento.codigo:
@@ -44,6 +86,7 @@ class SistemaAlmoxarifado:
     def cadastrar_emprestimo(self, emprestimo):
         equipamento = self.buscar_equipamento(emprestimo.codigo_equipamento)
         usuario = self.buscar_usuario(emprestimo.codigo_usuario)
+        reserva_encontrada = None
 
         if equipamento is None or usuario is None:
             return False
@@ -59,15 +102,23 @@ class SistemaAlmoxarifado:
                 return False
 
         for reserva in self.reservas:
-            if reserva.codigo_equipamento == emprestimo.codigo_equipamento and reserva.esta_ativa() and emprestimo.data_retirada <= reserva.data_fim and reserva.data_inicio <= emprestimo.data_devolucao:
-                return False
-            
+            if reserva.codigo_equipamento == emprestimo.codigo_equipamento and reserva.esta_ativa():
+                if reserva.codigo_usuario == emprestimo.codigo_usuario and reserva.data_inicio == emprestimo.data_retirada and reserva.data_fim >= emprestimo.data_devolucao:
+                    reserva_encontrada = reserva
+
+                elif emprestimo.data_retirada <= reserva.data_fim and reserva.data_inicio <= emprestimo.data_devolucao:
+                    return False
+
 
         self.emprestimos.append(emprestimo)
         equipamento.alterar_estado("emprestado")
 
         self.repositorio.salvar_emprestimos(self.emprestimos)
         self.repositorio.salvar_equipamentos(self.equipamentos)
+
+        if reserva_encontrada is not None:
+            reserva_encontrada.marcar_como_atendida()
+            self.repositorio.salvar_reservas(self.reservas)
 
         return True
 
@@ -99,7 +150,7 @@ class SistemaAlmoxarifado:
         equipamento = self.buscar_equipamento(reserva.codigo_equipamento)
         usuario = self.buscar_usuario(reserva.codigo_usuario)
 
-        if reserva.data_inicio > reserva.data_fim and reserva.data_inicio < date.today():
+        if reserva.data_inicio > reserva.data_fim or reserva.data_inicio < date.today():
              return False
 
         if equipamento is None or usuario is None:
