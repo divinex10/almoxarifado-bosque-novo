@@ -12,7 +12,7 @@ class SistemaAlmoxarifado:
     def listar_equipamentos(self):
            return self.equipamentos
 
-    def listar_emprestimo_ativos(self):
+    def listar_emprestimos_ativos(self):
         emprestimos_ativos = []
 
         for emprestimo in self.emprestimos:
@@ -28,7 +28,7 @@ class SistemaAlmoxarifado:
             if emprestimo.esta_em_atraso():
                 emprestimos_atrasados.append(emprestimo)
 
-            return emprestimos_atrasados
+        return emprestimos_atrasados
 
     def listar_reservas_ativas(self):
         reservas_ativas = []
@@ -39,17 +39,14 @@ class SistemaAlmoxarifado:
 
         return reservas_ativas
 
-
     def listar_avarias_pendentes(self):
         avarias_pendentes = []
 
         for avaria in self.avarias:
-            if not avaria.esta_ativa():
+            if avaria.esta_ativa():
                 avarias_pendentes.append(avaria)
 
         return avarias_pendentes
-
-    
 
     def cadastrar_equipamento(self, equipamento):
         for objeto in self.equipamentos:
@@ -70,18 +67,6 @@ class SistemaAlmoxarifado:
             self.usuarios.append(usuario)
             self.repositorio.salvar_usuarios(self.usuarios)
             return True
-
-    def buscar_equipamento(self, codigo):
-        for equipamento in self.equipamentos:
-            if equipamento.codigo == codigo:
-                return equipamento
-        return None
-
-    def buscar_usuario(self, codigo):
-        for usuario in self.usuarios:
-            if usuario.codigo == codigo:
-                return usuario
-        return None
 
     def cadastrar_emprestimo(self, emprestimo):
         equipamento = self.buscar_equipamento(emprestimo.codigo_equipamento)
@@ -122,30 +107,6 @@ class SistemaAlmoxarifado:
 
         return True
 
-    def registrar_devolucao(self, codigo_equipamento, data_retorno, avaria = None):
-        equipamento = self.buscar_equipamento(codigo_equipamento)
-
-        if equipamento is None:
-            return False
-
-        for emprestimo in self.emprestimos:
-            if emprestimo.codigo_equipamento == codigo_equipamento and not emprestimo.finalizado :
-                emprestimo.finalizar(data_retorno)
-
-                if avaria is not None:
-                    self.avarias.append(avaria)
-                    equipamento.alterar_estado("danificado")
-                    self.repositorio.salvar_avarias(self.avarias)
-                else:
-                    equipamento.alterar_estado("disponivel")
-
-                self.repositorio.salvar_emprestimos(self.emprestimos)
-                self.repositorio.salvar_equipamentos(self.equipamentos)
-
-                return True
-
-        return False
-
     def cadastrar_reserva(self, reserva):
         equipamento = self.buscar_equipamento(reserva.codigo_equipamento)
         usuario = self.buscar_usuario(reserva.codigo_usuario)
@@ -180,4 +141,82 @@ class SistemaAlmoxarifado:
         self.reservas.append(reserva)
         self.repositorio.salvar_reservas(self.reservas)
         return True
-   
+
+    def registrar_devolucao(self, codigo_equipamento, data_retorno, avaria = None):
+        equipamento = self.buscar_equipamento(codigo_equipamento)
+        emprestimo_encontrado = None
+
+        if equipamento is None:
+            return False
+
+        for emprestimo in self.emprestimos:
+            if emprestimo.codigo_equipamento == codigo_equipamento and not emprestimo.finalizado :
+                emprestimo_encontrado = emprestimo 
+
+                if avaria is not None:
+                    for avarias in self.avarias:
+                        if avarias.codigo == avaria.codigo:
+                            return False
+                        
+                    self.avarias.append(avaria)
+                    equipamento.alterar_estado("danificado")
+                    self.repositorio.salvar_avarias(self.avarias)
+                else:
+                    equipamento.alterar_estado("disponivel")
+
+                emprestimo_encontrado.finalizar(data_retorno)
+                self.repositorio.salvar_emprestimos(self.emprestimos)
+                self.repositorio.salvar_equipamentos(self.equipamentos)
+
+                return True
+
+        return False
+
+    def buscar_equipamento(self, codigo):
+        for equipamento in self.equipamentos:
+            if equipamento.codigo == codigo:
+                return equipamento
+        return None
+
+    def buscar_usuario(self, codigo):
+        for usuario in self.usuarios:
+            if usuario.codigo == codigo:
+                return usuario
+        return None
+
+    def cancelar_reserva(self, codigo):
+        reserva_encontrada = None
+
+        for reserva in self.reservas:
+            if reserva.codigo == codigo and reserva.esta_ativa():
+                reserva_encontrada = reserva
+
+        if reserva_encontrada is None:
+            return False
+        
+        reserva_encontrada.cancelar()
+        self.repositorio.salvar_reservas(self.reservas)
+
+        return True
+
+    def resolver_avaria(self, codigo, data):
+        equipamento = None
+        avaria_encontrada = None
+
+        for avaria in self.avarias:
+            if avaria.codigo == codigo and avaria.esta_ativa():
+                avaria_encontrada = avaria
+                equipamento = self.buscar_equipamento(avaria.codigo_equipamento)
+                break
+
+        if avaria_encontrada is None or equipamento is None:
+            return False
+
+        avaria_encontrada.resolver(data)
+        equipamento.alterar_estado("disponivel")
+
+        self.repositorio.salvar_avarias(self.avarias)
+        self.repositorio.salvar_equipamentos(self.equipamentos)
+
+        return True
+    

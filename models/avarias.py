@@ -13,5 +13,5 @@ class Avaria:
         self.data_resolucao = data_resolucao
 
     def esta_ativa(self):
-        return self.resolvida
+        return not self.resolvida
         
