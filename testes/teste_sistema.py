@@ -2,6 +2,7 @@
 import unittest
 from datetime import date, timedelta
 import sys
+import tempfile
 from pathlib import Path
 
 sys.path.append(str(Path(__file__).resolve().parent.parent))
@@ -19,23 +20,20 @@ from services.sistema_almoxarifado import SistemaAlmoxarifado
 class TesteSistemaAlmoxarifado(unittest.TestCase):
 
     def setUp(self):
-        self.repositorio = RepositorioJSON("dados")
-
-        # Limpa todos os arquivos JSON antes de cada teste
-        self.limpar_dados()
-
+        self.diretorio_temporario = tempfile.TemporaryDirectory()
+        self.repositorio = RepositorioJSON(self.diretorio_temporario.name)
         self.sistema = SistemaAlmoxarifado(self.repositorio)
 
         # Dados básicos utilizados em vários testes
         self.equipamento = Equipamento(
-            "EQ001",
+            "eqp001",
             "Projetor",
             "Projetor de teste",
             "disponivel"
         )
 
         self.usuario = Usuario(
-            "US001",
+            "usr001",
             "Usuario Teste",
             "teste@email.com"
         )
@@ -44,15 +42,7 @@ class TesteSistemaAlmoxarifado(unittest.TestCase):
         self.sistema.cadastrar_usuario(self.usuario)
 
     def tearDown(self):
-        # Limpa os JSON após cada teste
-        self.limpar_dados()
-
-    def limpar_dados(self):
-        self.repositorio.salvar("equipamentos.json", [])
-        self.repositorio.salvar("usuarios.json", [])
-        self.repositorio.salvar("emprestimos.json", [])
-        self.repositorio.salvar("reservas.json", [])
-        self.repositorio.salvar("avarias.json", [])
+        self.diretorio_temporario.cleanup()
 
     # --------------------------------------------------
     # CADASTROS
@@ -60,7 +50,7 @@ class TesteSistemaAlmoxarifado(unittest.TestCase):
 
     def test_cadastrar_equipamento(self):
         equipamento = Equipamento(
-            "EQ002",
+            "eqp002",
             "Notebook",
             "Notebook de teste",
             "disponivel"
@@ -70,12 +60,12 @@ class TesteSistemaAlmoxarifado(unittest.TestCase):
 
         self.assertTrue(resultado)
         self.assertIsNotNone(
-            self.sistema.buscar_equipamento("EQ002")
+            self.sistema.buscar_equipamento("eqp002")
         )
 
     def test_rejeitar_equipamento_duplicado(self):
         equipamento = Equipamento(
-            "EQ001",
+            "eqp001",
             "Outro Projetor",
             "Duplicado",
             "disponivel"
@@ -88,7 +78,7 @@ class TesteSistemaAlmoxarifado(unittest.TestCase):
 
     def test_cadastrar_usuario(self):
         usuario = Usuario(
-            "US002",
+            "usr002",
             "Outro Usuario",
             "outro@email.com"
         )
@@ -97,12 +87,12 @@ class TesteSistemaAlmoxarifado(unittest.TestCase):
 
         self.assertTrue(resultado)
         self.assertIsNotNone(
-            self.sistema.buscar_usuario("US002")
+            self.sistema.buscar_usuario("usr002")
         )
 
     def test_rejeitar_usuario_duplicado(self):
         usuario = Usuario(
-            "US001",
+            "usr001",
             "Usuario Duplicado",
             "duplicado@email.com"
         )
@@ -128,9 +118,9 @@ class TesteSistemaAlmoxarifado(unittest.TestCase):
 
     def test_cadastrar_emprestimo(self):
         emprestimo = Emprestimo(
-            "EM001",
-            "EQ001",
-            "US001",
+            "emp001",
+            "eqp001",
+            "usr001",
             date.today(),
             date.today() + timedelta(days=5)
         )
@@ -140,7 +130,7 @@ class TesteSistemaAlmoxarifado(unittest.TestCase):
         self.assertTrue(resultado)
 
         self.assertEqual(
-            self.sistema.buscar_equipamento("EQ001").estado,
+            self.sistema.buscar_equipamento("eqp001").estado,
             "emprestado"
         )
 
@@ -151,9 +141,9 @@ class TesteSistemaAlmoxarifado(unittest.TestCase):
 
     def test_rejeitar_emprestimo_equipamento_inexistente(self):
         emprestimo = Emprestimo(
-            "EM001",
-            "EQ999",
-            "US001",
+            "emp001",
+            "eqp999",
+            "usr001",
             date.today(),
             date.today() + timedelta(days=5)
         )
@@ -164,9 +154,9 @@ class TesteSistemaAlmoxarifado(unittest.TestCase):
 
     def test_rejeitar_emprestimo_usuario_inexistente(self):
         emprestimo = Emprestimo(
-            "EM001",
-            "EQ001",
-            "US999",
+            "emp001",
+            "eqp001",
+            "usr999",
             date.today(),
             date.today() + timedelta(days=5)
         )
@@ -177,17 +167,17 @@ class TesteSistemaAlmoxarifado(unittest.TestCase):
 
     def test_rejeitar_emprestimo_equipamento_emprestado(self):
         primeiro = Emprestimo(
-            "EM001",
-            "EQ001",
-            "US001",
+            "emp001",
+            "eqp001",
+            "usr001",
             date.today(),
             date.today() + timedelta(days=5)
         )
 
         segundo = Emprestimo(
-            "EM002",
-            "EQ001",
-            "US001",
+            "emp002",
+            "eqp001",
+            "usr001",
             date.today(),
             date.today() + timedelta(days=3)
         )
@@ -201,9 +191,9 @@ class TesteSistemaAlmoxarifado(unittest.TestCase):
 
     def test_rejeitar_codigo_emprestimo_duplicado(self):
         primeiro = Emprestimo(
-            "EM001",
-            "EQ001",
-            "US001",
+            "emp001",
+            "eqp001",
+            "usr001",
             date.today(),
             date.today() + timedelta(days=5)
         )
@@ -212,14 +202,14 @@ class TesteSistemaAlmoxarifado(unittest.TestCase):
 
         # Devolvendo o equipamento para permitir novo empréstimo
         self.sistema.registrar_devolucao(
-            "EQ001",
+            "eqp001",
             date.today()
         )
 
         segundo = Emprestimo(
-            "EM001",
-            "EQ001",
-            "US001",
+            "emp001",
+            "eqp001",
+            "usr001",
             date.today(),
             date.today() + timedelta(days=3)
         )
@@ -231,9 +221,9 @@ class TesteSistemaAlmoxarifado(unittest.TestCase):
 
     def test_rejeitar_retirada_futura(self):
         emprestimo = Emprestimo(
-            "EM001",
-            "EQ001",
-            "US001",
+            "emp001",
+            "eqp001",
+            "usr001",
             date.today() + timedelta(days=2),
             date.today() + timedelta(days=5)
         )
@@ -244,9 +234,9 @@ class TesteSistemaAlmoxarifado(unittest.TestCase):
 
     def test_rejeitar_devolucao_anterior_retirada(self):
         emprestimo = Emprestimo(
-            "EM001",
-            "EQ001",
-            "US001",
+            "emp001",
+            "eqp001",
+            "usr001",
             date.today(),
             date.today() - timedelta(days=1)
         )
@@ -261,9 +251,9 @@ class TesteSistemaAlmoxarifado(unittest.TestCase):
 
     def test_cadastrar_reserva_futura(self):
         reserva = Reserva(
-            "RE001",
-            "EQ001",
-            "US001",
+            "res001",
+            "eqp001",
+            "usr001",
             date.today() + timedelta(days=2),
             date.today() + timedelta(days=4)
         )
@@ -275,9 +265,9 @@ class TesteSistemaAlmoxarifado(unittest.TestCase):
 
     def test_rejeitar_reserva_data_passada(self):
         reserva = Reserva(
-            "RE001",
-            "EQ001",
-            "US001",
+            "res001",
+            "eqp001",
+            "usr001",
             date.today() - timedelta(days=1),
             date.today() + timedelta(days=2)
         )
@@ -288,9 +278,9 @@ class TesteSistemaAlmoxarifado(unittest.TestCase):
 
     def test_rejeitar_reserva_data_inicio_maior(self):
         reserva = Reserva(
-            "RE001",
-            "EQ001",
-            "US001",
+            "res001",
+            "eqp001",
+            "usr001",
             date.today() + timedelta(days=5),
             date.today() + timedelta(days=2)
         )
@@ -301,9 +291,9 @@ class TesteSistemaAlmoxarifado(unittest.TestCase):
 
     def test_rejeitar_reserva_equipamento_inexistente(self):
         reserva = Reserva(
-            "RE001",
-            "EQ999",
-            "US001",
+            "res001",
+            "eqp999",
+            "usr001",
             date.today() + timedelta(days=2),
             date.today() + timedelta(days=4)
         )
@@ -314,9 +304,9 @@ class TesteSistemaAlmoxarifado(unittest.TestCase):
 
     def test_rejeitar_reserva_usuario_inexistente(self):
         reserva = Reserva(
-            "RE001",
-            "EQ001",
-            "US999",
+            "res001",
+            "eqp001",
+            "usr999",
             date.today() + timedelta(days=2),
             date.today() + timedelta(days=4)
         )
@@ -327,17 +317,17 @@ class TesteSistemaAlmoxarifado(unittest.TestCase):
 
     def test_rejeitar_reservas_conflitantes(self):
         primeira = Reserva(
-            "RE001",
-            "EQ001",
-            "US001",
+            "res001",
+            "eqp001",
+            "usr001",
             date.today() + timedelta(days=2),
             date.today() + timedelta(days=5)
         )
 
         segunda = Reserva(
-            "RE002",
-            "EQ001",
-            "US001",
+            "res002",
+            "eqp001",
+            "usr001",
             date.today() + timedelta(days=4),
             date.today() + timedelta(days=7)
         )
@@ -351,22 +341,22 @@ class TesteSistemaAlmoxarifado(unittest.TestCase):
 
     def test_cancelar_reserva(self):
         reserva = Reserva(
-            "RE001",
-            "EQ001",
-            "US001",
+            "res001",
+            "eqp001",
+            "usr001",
             date.today() + timedelta(days=2),
             date.today() + timedelta(days=4)
         )
 
         self.sistema.cadastrar_reserva(reserva)
 
-        resultado = self.sistema.cancelar_reserva("RE001")
+        resultado = self.sistema.cancelar_reserva("res001")
 
         self.assertTrue(resultado)
         self.assertEqual(len(self.sistema.listar_reservas_ativas()), 0)
 
     def test_rejeitar_cancelamento_reserva_inexistente(self):
-        resultado = self.sistema.cancelar_reserva("RE999")
+        resultado = self.sistema.cancelar_reserva("res999")
 
         self.assertFalse(resultado)
 
@@ -376,9 +366,9 @@ class TesteSistemaAlmoxarifado(unittest.TestCase):
 
     def test_registrar_devolucao_normal(self):
         emprestimo = Emprestimo(
-            "EM001",
-            "EQ001",
-            "US001",
+            "emp001",
+            "eqp001",
+            "usr001",
             date.today(),
             date.today() + timedelta(days=5)
         )
@@ -386,14 +376,14 @@ class TesteSistemaAlmoxarifado(unittest.TestCase):
         self.sistema.cadastrar_emprestimo(emprestimo)
 
         resultado = self.sistema.registrar_devolucao(
-            "EQ001",
+            "eqp001",
             date.today()
         )
 
         self.assertTrue(resultado)
 
         self.assertEqual(
-            self.sistema.buscar_equipamento("EQ001").estado,
+            self.sistema.buscar_equipamento("eqp001").estado,
             "disponivel"
         )
 
@@ -402,7 +392,7 @@ class TesteSistemaAlmoxarifado(unittest.TestCase):
 
     def test_rejeitar_devolucao_sem_emprestimo_ativo(self):
         resultado = self.sistema.registrar_devolucao(
-            "EQ001",
+            "eqp001",
             date.today()
         )
 
@@ -410,7 +400,7 @@ class TesteSistemaAlmoxarifado(unittest.TestCase):
 
     def test_rejeitar_devolucao_equipamento_inexistente(self):
         resultado = self.sistema.registrar_devolucao(
-            "EQ999",
+            "eqp999",
             date.today()
         )
 
@@ -422,9 +412,9 @@ class TesteSistemaAlmoxarifado(unittest.TestCase):
 
     def test_devolucao_com_avaria(self):
         emprestimo = Emprestimo(
-            "EM001",
-            "EQ001",
-            "US001",
+            "emp001",
+            "eqp001",
+            "usr001",
             date.today(),
             date.today() + timedelta(days=5)
         )
@@ -432,15 +422,15 @@ class TesteSistemaAlmoxarifado(unittest.TestCase):
         self.sistema.cadastrar_emprestimo(emprestimo)
 
         avaria = Avaria(
-            "AV001",
-            "EQ001",
-            "EM001",
+            "avr001",
+            "eqp001",
+            "emp001",
             "Equipamento danificado",
             date.today()
         )
 
         resultado = self.sistema.registrar_devolucao(
-            "EQ001",
+            "eqp001",
             date.today(),
             avaria
         )
@@ -448,7 +438,7 @@ class TesteSistemaAlmoxarifado(unittest.TestCase):
         self.assertTrue(resultado)
 
         self.assertEqual(
-            self.sistema.buscar_equipamento("EQ001").estado,
+            self.sistema.buscar_equipamento("eqp001").estado,
             "danificado"
         )
 
@@ -456,9 +446,9 @@ class TesteSistemaAlmoxarifado(unittest.TestCase):
 
     def test_resolver_avaria(self):
         emprestimo = Emprestimo(
-            "EM001",
-            "EQ001",
-            "US001",
+            "emp001",
+            "eqp001",
+            "usr001",
             date.today(),
             date.today() + timedelta(days=5)
         )
@@ -466,28 +456,28 @@ class TesteSistemaAlmoxarifado(unittest.TestCase):
         self.sistema.cadastrar_emprestimo(emprestimo)
 
         avaria = Avaria(
-            "AV001",
-            "EQ001",
-            "EM001",
+            "avr001",
+            "eqp001",
+            "emp001",
             "Equipamento danificado",
             date.today()
         )
 
         self.sistema.registrar_devolucao(
-            "EQ001",
+            "eqp001",
             date.today(),
             avaria
         )
 
         resultado = self.sistema.resolver_avaria(
-            "AV001",
+            "avr001",
             date.today()
         )
 
         self.assertTrue(resultado)
 
         self.assertEqual(
-            self.sistema.buscar_equipamento("EQ001").estado,
+            self.sistema.buscar_equipamento("eqp001").estado,
             "disponivel"
         )
 
@@ -495,7 +485,7 @@ class TesteSistemaAlmoxarifado(unittest.TestCase):
 
     def test_rejeitar_resolucao_avaria_inexistente(self):
         resultado = self.sistema.resolver_avaria(
-            "AV999",
+            "avr999",
             date.today()
         )
 
@@ -509,13 +499,13 @@ class TesteSistemaAlmoxarifado(unittest.TestCase):
         resultado = self.sistema.listar_equipamentos()
 
         self.assertEqual(len(resultado), 1)
-        self.assertEqual(resultado[0].codigo, "EQ001")
+        self.assertEqual(resultado[0].codigo, "eqp001")
 
     def test_listar_emprestimos_ativos(self):
         emprestimo = Emprestimo(
-            "EM001",
-            "EQ001",
-            "US001",
+            "emp001",
+            "eqp001",
+            "usr001",
             date.today(),
             date.today() + timedelta(days=5)
         )
@@ -528,9 +518,9 @@ class TesteSistemaAlmoxarifado(unittest.TestCase):
 
     def test_listar_emprestimos_atrasados(self):
         emprestimo = Emprestimo(
-            "EM001",
-            "EQ001",
-            "US001",
+            "emp001",
+            "eqp001",
+            "usr001",
             date.today() - timedelta(days=5),
             date.today() - timedelta(days=1)
         )
@@ -541,7 +531,7 @@ class TesteSistemaAlmoxarifado(unittest.TestCase):
         resultado = self.sistema.listar_emprestimos_atrasados()
 
         self.assertEqual(len(resultado), 1)
-        self.assertEqual(resultado[0].codigo, "EM001")
+        self.assertEqual(resultado[0].codigo, "emp001")
 
     # --------------------------------------------------
     # PERSISTÊNCIA
@@ -549,14 +539,14 @@ class TesteSistemaAlmoxarifado(unittest.TestCase):
 
     def test_persistencia_dos_dados(self):
         equipamento = Equipamento(
-            "EQ002",
+            "eqp002",
             "Notebook",
             "Notebook de teste",
             "disponivel"
         )
 
         usuario = Usuario(
-            "US002",
+            "usr002",
             "Outro Usuario",
             "outro@email.com"
         )
@@ -568,11 +558,11 @@ class TesteSistemaAlmoxarifado(unittest.TestCase):
         novo_sistema = SistemaAlmoxarifado(self.repositorio)
 
         self.assertIsNotNone(
-            novo_sistema.buscar_equipamento("EQ002")
+            novo_sistema.buscar_equipamento("eqp002")
         )
 
         self.assertIsNotNone(
-            novo_sistema.buscar_usuario("US002")
+            novo_sistema.buscar_usuario("usr002")
         )
 
     
@@ -581,12 +571,17 @@ class TesteSistemaAlmoxarifado(unittest.TestCase):
     # --------------------------------------------------
 
     def test_rejeitar_reserva_equipamento_danificado(self):
-        self.equipamento.alterar_estado("danificado")
+        emprestimo = Emprestimo(
+            "emp001", "eqp001", "usr001", date.today(), date.today() + timedelta(days=5)
+        )
+        self.sistema.cadastrar_emprestimo(emprestimo)
+        avaria = Avaria("avr001", "eqp001", "emp001", "Dano de teste", date.today())
+        self.sistema.registrar_devolucao("eqp001", date.today(), avaria)
 
         reserva = Reserva(
-            "RE001",
-            "EQ001",
-            "US001",
+            "res001",
+            "eqp001",
+            "usr001",
             date.today() + timedelta(days=2),
             date.today() + timedelta(days=4)
         )
@@ -597,7 +592,7 @@ class TesteSistemaAlmoxarifado(unittest.TestCase):
 
     def test_rejeitar_emprestimo_com_reserva_de_outro_usuario(self):
         outro_usuario = Usuario(
-            "US002",
+            "usr002",
             "Outro Usuario",
             "outro@email.com"
         )
@@ -605,9 +600,9 @@ class TesteSistemaAlmoxarifado(unittest.TestCase):
         self.sistema.cadastrar_usuario(outro_usuario)
 
         reserva = Reserva(
-            "RE001",
-            "EQ001",
-            "US002",
+            "res001",
+            "eqp001",
+            "usr002",
             date.today(),
             date.today() + timedelta(days=5)
         )
@@ -615,9 +610,9 @@ class TesteSistemaAlmoxarifado(unittest.TestCase):
         self.sistema.cadastrar_reserva(reserva)
 
         emprestimo = Emprestimo(
-            "EM001",
-            "EQ001",
-            "US001",
+            "emp001",
+            "eqp001",
+            "usr001",
             date.today(),
             date.today() + timedelta(days=3)
         )
@@ -629,9 +624,9 @@ class TesteSistemaAlmoxarifado(unittest.TestCase):
 
     def test_emprestimo_atende_reserva_do_mesmo_usuario(self):
         reserva = Reserva(
-            "RE001",
-            "EQ001",
-            "US001",
+            "res001",
+            "eqp001",
+            "usr001",
             date.today(),
             date.today() + timedelta(days=5)
         )
@@ -639,9 +634,9 @@ class TesteSistemaAlmoxarifado(unittest.TestCase):
         self.sistema.cadastrar_reserva(reserva)
 
         emprestimo = Emprestimo(
-            "EM001",
-            "EQ001",
-            "US001",
+            "emp001",
+            "eqp001",
+            "usr001",
             date.today(),
             date.today() + timedelta(days=3)
         )
@@ -654,9 +649,9 @@ class TesteSistemaAlmoxarifado(unittest.TestCase):
 
     def test_rejeitar_reserva_conflitante_com_emprestimo(self):
         emprestimo = Emprestimo(
-            "EM001",
-            "EQ001",
-            "US001",
+            "emp001",
+            "eqp001",
+            "usr001",
             date.today(),
             date.today() + timedelta(days=5)
         )
@@ -664,9 +659,9 @@ class TesteSistemaAlmoxarifado(unittest.TestCase):
         self.sistema.cadastrar_emprestimo(emprestimo)
 
         reserva = Reserva(
-            "RE001",
-            "EQ001",
-            "US001",
+            "res001",
+            "eqp001",
+            "usr001",
             date.today() + timedelta(days=2),
             date.today() + timedelta(days=4)
         )
