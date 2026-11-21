@@ -1,25 +1,35 @@
 from datetime import date
 
+
 class Emprestimo:
-    def __init__(self, codigo, codigo_equipamento, codigo_usuario, data_retirada, data_devolucao, finalizado = False, data_retorno = None):
-        self.codigo = codigo
-        self.codigo_equipamento = codigo_equipamento
-        self.codigo_usuario = codigo_usuario
+    def __init__(self, codigo, codigo_equipamento, codigo_usuario, data_retirada,
+                 data_devolucao, finalizado=False, data_retorno=None):
+        self.codigo = str(codigo).strip().lower()
+        self.codigo_equipamento = str(codigo_equipamento).strip().lower()
+        self.codigo_usuario = str(codigo_usuario).strip().lower()
         self.data_retirada = data_retirada
         self.data_devolucao = data_devolucao
-        self.finalizado = finalizado
+        self._finalizado = bool(finalizado)
         self.data_retorno = data_retorno
+        if self._finalizado and self.data_retorno is None:
+            raise ValueError("Empréstimo finalizado precisa ter data de retorno.")
 
-    def esta_em_atraso(self):
-        if self.finalizado:
+    @property
+    def finalizado(self):
+        return self._finalizado
+
+    def esta_em_atraso(self, hoje=None):
+        if self._finalizado:
             return False
-        data_atual = date.today()
-        return data_atual > self.data_devolucao
+        return (hoje or date.today()) > self.data_devolucao
 
     def esta_ativo(self):
-        return not self.finalizado 
-    
+        return not self._finalizado
 
     def finalizar(self, data_retorno):
-        self.finalizado = True
+        if self._finalizado:
+            raise ValueError("Este empréstimo já foi finalizado.")
+        if data_retorno < self.data_retirada:
+            raise ValueError("A data de retorno não pode ser anterior à retirada.")
+        self._finalizado = True
         self.data_retorno = data_retorno
