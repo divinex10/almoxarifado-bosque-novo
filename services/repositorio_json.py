@@ -1,6 +1,9 @@
 import json
 import os
+import tempfile
 from datetime import date
+from pathlib import Path
+
 from models.equipamentos import Equipamento
 from models.avarias import Avaria
 from models.emprestimos import Emprestimo
@@ -9,238 +12,160 @@ from models.usuarios import Usuario
 
 
 class RepositorioJSON:
-    def __init__(self, pasta_dados = "dados"):
-        self.pasta_dados = pasta_dados
+    ARQUIVOS = {
+        "equipamentos": ("equipamentos.json", "equipamento_para_dict", "dict_para_equipamento"),
+        "usuarios": ("usuarios.json", "usuario_para_dict", "dict_para_usuario"),
+        "emprestimos": ("emprestimos.json", "emprestimo_para_dict", "dict_para_emprestimo"),
+        "reservas": ("reservas.json", "reserva_para_dict", "dict_para_reserva"),
+        "avarias": ("avarias.json", "avaria_para_dict", "dict_para_avaria"),
+    }
+
+    def __init__(self, pasta_dados="dados"):
+        self.pasta_dados = Path(pasta_dados)
 
     def _obter_caminho(self, nome_arquivo):
-        return os.path.join(self.pasta_dados, nome_arquivo)
+        return self.pasta_dados / nome_arquivo
 
     def carregar(self, nome_arquivo):
         caminho = self._obter_caminho(nome_arquivo)
-
-        os.makedirs(self.pasta_dados, exist_ok=True)
-
-        if os.path.exists(caminho):
-            try:
-                with open(caminho, "r", encoding="utf-8") as arquivo:
-                    dados = json.load(arquivo)
-                return dados
-            except json.JSONDecodeError as erro:
-                raise ValueError(f"Arquivo JSON inválido: {nome_arquivo}") from erro
-        else:
-            with open(caminho, "w", encoding="utf-8") as arquivo:
-                json.dump([], arquivo, ensure_ascii=False, indent=4)
-
+        self.pasta_dados.mkdir(parents=True, exist_ok=True)
+        if not caminho.exists():
+            self.salvar(nome_arquivo, [])
             return []
+        try:
+            with caminho.open("r", encoding="utf-8") as arquivo:
+                dados = json.load(arquivo)
+        except json.JSONDecodeError as erro:
+            raise ValueError(f"O arquivo {nome_arquivo} contém JSON inválido.") from erro
+        if not isinstance(dados, list):
+            raise ValueError(f"O conteúdo de {nome_arquivo} deve ser uma lista JSON.")
+        return dados
 
     def salvar(self, nome_arquivo, dados):
-        caminho = self._obter_caminho(nome_arquivo)
-        os.makedirs(self.pasta_dados, exist_ok=True)
+        self.salvar_varios({nome_arquivo: dados})
 
-        with open(caminho, "w", encoding="utf-8") as arquivo:
-            json.dump(dados, arquivo, ensure_ascii=False, indent=4)
+    def salvar_varios(self, dados_por_arquivo):
+        """Grava um conjunto de arquivos. Se a gravação falhar, tenta restaurar os originais."""
+        self.pasta_dados.mkdir(parents=True, exist_ok=True)
+        temporarios = {}
+        originais = {}
+        substituidos = []
+        try:
+            for nome_arquivo, dados in dados_por_arquivo.items():
+                destino = self._obter_caminho(nome_arquivo)
+                originais[destino] = destino.read_bytes() if destino.exists() else None
+                fd, temporario = tempfile.mkstemp(prefix=f".{destino.name}.", suffix=".tmp", dir=self.pasta_dados)
+                temporarios[destino] = temporario
+                with os.fdopen(fd, "w", encoding="utf-8") as arquivo:
+                    json.dump(dados, arquivo, ensure_ascii=False, indent=4)
+                    arquivo.flush()
+                    os.fsync(arquivo.fileno())
+            for destino, temporario in temporarios.items():
+                os.replace(temporario, destino)
+                substituidos.append(destino)
+        except Exception:
+            for destino in reversed(substituidos):
+                conteudo = originais[destino]
+                if conteudo is None:
+                    destino.unlink(missing_ok=True)
+                else:
+                    destino.write_bytes(conteudo)
+            raise
+        finally:
+            for temporario in temporarios.values():
+                if os.path.exists(temporario):
+                    os.unlink(temporario)
 
-    def equipamento_para_dict(self, objeto):
-        codigo = objeto.codigo
-        nome = objeto.nome
-        descricao = objeto.descricao
-        estado = objeto.estado
+    def equipamento_para_dict(self, obj):
+        return {"codigo": obj.codigo, "nome": obj.nome, "descricao": obj.descricao, "estado": obj.estado}
 
+    def dict_para_equipamento(self, d):
+        return Equipamento(d["codigo"], d["nome"], d["descricao"], d["estado"])
+
+    def usuario_para_dict(self, obj):
+        return {"codigo": obj.codigo, "nome": obj.nome, "contato": obj.contato}
+
+    def dict_para_usuario(self, d):
+        return Usuario(d["codigo"], d["nome"], d["contato"])
+
+    def emprestimo_para_dict(self, obj):
         return {
-            "codigo":codigo,
-            "nome": nome,
-            "descricao":descricao,
-            "estado":estado
+            "codigo": obj.codigo,
+            "codigo_equipamento": obj.codigo_equipamento,
+            "codigo_usuario": obj.codigo_usuario,
+            "data_retirada": obj.data_retirada.isoformat(),
+            "data_devolucao": obj.data_devolucao.isoformat(),
+            "finalizado": obj.finalizado,
+            "data_retorno": obj.data_retorno.isoformat() if obj.data_retorno else None,
         }
 
-    def dict_para_equipamento(self, dicionario):
-        return Equipamento(dicionario["codigo"], dicionario["nome"], dicionario["descricao"], dicionario["estado"])
-
-    def usuario_para_dict(self, objeto):
-        codigo = objeto.codigo
-        nome = objeto.nome
-        contato = objeto.contato
-
-        return {
-            "codigo":codigo,
-            "nome": nome,
-            "contato":contato
-        }
-
-    def dict_para_usuario(self, dicionario):
-        return Usuario(dicionario["codigo"], dicionario["nome"], dicionario["contato"])
-
-    def avaria_para_dict(self, objeto):
-        codigo = objeto.codigo
-        codigo_equipamento = objeto.codigo_equipamento
-        codigo_emprestimo = objeto.codigo_emprestimo
-        descricao = objeto.descricao
-        data_registro = objeto.data_registro.isoformat()
-        resolvida = objeto.resolvida
-        data_resolucao = objeto.data_resolucao.isoformat() if objeto.data_resolucao is not None else None
-
-        return {
-            "codigo":codigo,
-            "codigo_equipamento":codigo_equipamento,
-            "codigo_emprestimo": codigo_emprestimo,
-            "descricao":descricao,
-            "data_registro":data_registro,
-            "resolvida":resolvida,
-            "data_resolucao":data_resolucao
-        }
-
-    def dict_para_avaria(self, dicionario):
-        return Avaria(
-            dicionario["codigo"],
-            dicionario["codigo_equipamento"],
-            dicionario["codigo_emprestimo"],
-            dicionario["descricao"],
-            date.fromisoformat(dicionario["data_registro"]),
-            dicionario["resolvida"],
-            date.fromisoformat(dicionario["data_resolucao"]) if dicionario["data_resolucao"] is not None else None
-        )
-
-    def emprestimo_para_dict(self, objeto):
-        codigo = objeto.codigo
-        codigo_equipamento = objeto.codigo_equipamento
-        codigo_usuario = objeto.codigo_usuario
-        data_retirada = objeto.data_retirada.isoformat()
-        data_devolucao = objeto.data_devolucao.isoformat()
-        finalizado = objeto.finalizado
-
-        if objeto.data_retorno is not None:
-            data_retorno = objeto.data_retorno.isoformat()
-
-        else:
-            data_retorno = None
-
-        return {
-            "codigo":codigo,
-            "codigo_equipamento":codigo_equipamento,
-            "codigo_usuario":codigo_usuario,
-            "data_retirada":data_retirada,
-            "data_devolucao":data_devolucao,
-            "finalizado":finalizado,
-            "data_retorno":data_retorno
-        }
-
-    def dict_para_emprestimo(self, dicionario):
+    def dict_para_emprestimo(self, d):
         return Emprestimo(
-            dicionario["codigo"],
-            dicionario["codigo_equipamento"],
-            dicionario["codigo_usuario"],
-            date.fromisoformat(dicionario["data_retirada"]),
-            date.fromisoformat(dicionario["data_devolucao"]),
-            dicionario["finalizado"],
-            date.fromisoformat(dicionario["data_retorno"]) if dicionario["data_retorno"] is not None else None
+            d["codigo"], d["codigo_equipamento"], d["codigo_usuario"],
+            date.fromisoformat(d["data_retirada"]), date.fromisoformat(d["data_devolucao"]),
+            d.get("finalizado", False),
+            date.fromisoformat(d["data_retorno"]) if d.get("data_retorno") else None,
         )
 
-    def reserva_para_dict(self, objeto):
-        codigo = objeto.codigo
-        codigo_equipamento = objeto.codigo_equipamento
-        codigo_usuario = objeto.codigo_usuario
-        data_inicio = objeto.data_inicio.isoformat()
-        data_fim = objeto.data_fim.isoformat()
-        cancelada = objeto.cancelada
-        atendida = objeto.atendida
-
+    def reserva_para_dict(self, obj):
         return {
-            "codigo":codigo,
-            "codigo_equipamento":codigo_equipamento,
-            "codigo_usuario":codigo_usuario,
-            "data_inicio":data_inicio,
-            "data_fim":data_fim,
-            "cancelada":cancelada,
-            "atendida":atendida
+            "codigo": obj.codigo,
+            "codigo_equipamento": obj.codigo_equipamento,
+            "codigo_usuario": obj.codigo_usuario,
+            "data_inicio": obj.data_inicio.isoformat(),
+            "data_fim": obj.data_fim.isoformat(),
+            "cancelada": obj.cancelada,
+            "atendida": obj.atendida,
         }
 
-    def dict_para_reserva(self, dicionario):
+    def dict_para_reserva(self, d):
         return Reserva(
-            dicionario["codigo"],
-            dicionario["codigo_equipamento"],
-            dicionario["codigo_usuario"],
-            date.fromisoformat(dicionario["data_inicio"]),
-            date.fromisoformat(dicionario["data_fim"]),
-            dicionario["cancelada"],
-            dicionario["atendida"]
+            d["codigo"], d["codigo_equipamento"], d["codigo_usuario"],
+            date.fromisoformat(d["data_inicio"]), date.fromisoformat(d["data_fim"]),
+            d.get("cancelada", False), d.get("atendida", False),
         )
 
-    def carregar_equipamentos(self):
-        equipamentos = []
-        dados = self.carregar("equipamentos.json")
+    def avaria_para_dict(self, obj):
+        return {
+            "codigo": obj.codigo,
+            "codigo_equipamento": obj.codigo_equipamento,
+            "codigo_emprestimo": obj.codigo_emprestimo,
+            "descricao": obj.descricao,
+            "data_registro": obj.data_registro.isoformat(),
+            "resolvida": obj.resolvida,
+            "data_resolucao": obj.data_resolucao.isoformat() if obj.data_resolucao else None,
+        }
 
-        for equipamento in dados:
-            objeto = self.dict_para_equipamento(equipamento)
-            equipamentos.append(objeto)
+    def dict_para_avaria(self, d):
+        return Avaria(
+            d["codigo"], d["codigo_equipamento"], d["codigo_emprestimo"], d["descricao"],
+            date.fromisoformat(d["data_registro"]), d.get("resolvida", False),
+            date.fromisoformat(d["data_resolucao"]) if d.get("data_resolucao") else None,
+        )
 
-        return equipamentos
+    def _carregar_lista(self, chave):
+        arquivo, _, conversor = self.ARQUIVOS[chave]
+        return [getattr(self, conversor)(item) for item in self.carregar(arquivo)]
 
-    def carregar_usuarios(self):
-        usuarios = []
-        dados = self.carregar("usuarios.json")
+    def carregar_equipamentos(self): return self._carregar_lista("equipamentos")
+    def carregar_usuarios(self): return self._carregar_lista("usuarios")
+    def carregar_emprestimos(self): return self._carregar_lista("emprestimos")
+    def carregar_reservas(self): return self._carregar_lista("reservas")
+    def carregar_avarias(self): return self._carregar_lista("avarias")
 
-        for usuario in dados:
-            objeto = self.dict_para_usuario(usuario)
-            usuarios.append(objeto)
+    def _salvar_lista(self, chave, objetos):
+        arquivo, conversor, _ = self.ARQUIVOS[chave]
+        self.salvar(arquivo, [getattr(self, conversor)(obj) for obj in objetos])
 
-        return usuarios
+    def salvar_equipamentos(self, objetos): self._salvar_lista("equipamentos", objetos)
+    def salvar_usuarios(self, objetos): self._salvar_lista("usuarios", objetos)
+    def salvar_emprestimos(self, objetos): self._salvar_lista("emprestimos", objetos)
+    def salvar_reservas(self, objetos): self._salvar_lista("reservas", objetos)
+    def salvar_avarias(self, objetos): self._salvar_lista("avarias", objetos)
 
-    def carregar_avarias(self):
-        avarias = []
-        dados = self.carregar("avarias.json")
-
-        for avaria in dados:
-            objeto = self.dict_para_avaria(avaria)
-            avarias.append(objeto)
-
-        return avarias
-
-    def carregar_emprestimos(self):
-        emprestimos = []
-        dados = self.carregar("emprestimos.json")
-
-        for emprestimo in dados:
-            objeto = self.dict_para_emprestimo(emprestimo)
-            emprestimos.append(objeto)
-
-        return emprestimos
-
-    def carregar_reservas(self):
-        reservas = []
-        dados = self.carregar("reservas.json")
-
-        for reserva in dados:
-            objeto = self.dict_para_reserva(reserva)
-            reservas.append(objeto)
-
-        return reservas
-
-    def salvar_equipamentos(self, equipamentos):
-        dados = []
-        for equipamento in equipamentos:
-            dados.append(self.equipamento_para_dict(equipamento))
-        self.salvar("equipamentos.json", dados)
-
-    def salvar_usuarios(self, usuarios):
-        dados = []
-        for usuario in usuarios:
-            dados.append(self.usuario_para_dict(usuario))
-        self.salvar("usuarios.json", dados)
-
-    def salvar_avarias(self, avarias):
-        dados = []
-        for avaria in avarias:
-            dados.append(self.avaria_para_dict(avaria))
-        self.salvar("avarias.json", dados)
-
-    def salvar_emprestimos(self, emprestimos):
-        dados = []
-        for emprestimo in emprestimos:
-            dados.append(self.emprestimo_para_dict(emprestimo))
-        self.salvar("emprestimos.json", dados)
-
-    def salvar_reservas(self, reservas):
-        dados = []
-        for reserva in reservas:
-            dados.append(self.reserva_para_dict(reserva))
-        self.salvar("reservas.json", dados)
+    def salvar_estado(self, sistema, chaves):
+        dados = {}
+        for chave in chaves:
+            arquivo, conversor, _ = self.ARQUIVOS[chave]
+            dados[arquivo] = [getattr(self, conversor)(obj) for obj in getattr(sistema, chave)]
+        self.salvar_varios(dados)
