@@ -1,1 +1,32 @@
-[]
+[
+    {
+        "codigo": "eqp001",
+        "nome": "Projetor",
+        "descricao": "Projetor dell",
+        "estado": "emprestado"
+    },
+    {
+        "codigo": "eqp002",
+        "nome": "Notebook",
+        "descricao": "Notebook hp",
+        "estado": "emprestado"
+    },
+    {
+        "codigo": "eqp003",
+        "nome": "Caixa de som",
+        "descricao": "Caixa de som JBL",
+        "estado": "disponivel"
+    },
+    {
+        "codigo": "eqp004",
+        "nome": "Impressora",
+        "descricao": "Impressora hp",
+        "estado": "disponivel"
+    },
+    {
+        "codigo": "eqp005",
+        "nome": "mouse",
+        "descricao": "mouse attack shark",
+        "estado": "emprestado"
+    }
+]

@@ -1,1 +1,12 @@
-[]
+[
+    {
+        "codigo": "usr001",
+        "nome": "Ana Silva",
+        "contato": "ana@email.com"
+    },
+    {
+        "codigo": "usr002",
+        "nome": "Bruno Souza",
+        "contato": "bruno@email.com"
+    }
+]

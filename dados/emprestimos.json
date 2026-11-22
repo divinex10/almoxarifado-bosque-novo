@@ -1,1 +1,29 @@
-[]
+[
+    {
+        "codigo": "emp001",
+        "codigo_equipamento": "eqp001",
+        "codigo_usuario": "usr001",
+        "data_retirada": "2026-11-22",
+        "data_devolucao": "2026-11-29",
+        "finalizado": false,
+        "data_retorno": null
+    },
+    {
+        "codigo": "emp002",
+        "codigo_equipamento": "eqp002",
+        "codigo_usuario": "usr001",
+        "data_retirada": "2026-11-22",
+        "data_devolucao": "2026-11-29",
+        "finalizado": false,
+        "data_retorno": null
+    },
+    {
+        "codigo": "emp003",
+        "codigo_equipamento": "eqp005",
+        "codigo_usuario": "usr001",
+        "data_retirada": "2026-11-22",
+        "data_devolucao": "2026-11-22",
+        "finalizado": false,
+        "data_retorno": null
+    }
+]
